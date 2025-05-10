@@ -9,9 +9,13 @@
 #define HOST "192.168.4.1"
 #define PORT 1234
 
-#define BUTTON_PIN 2
+#define POWER_BUTTON_PIN 2
+#define RESET_BUTTON_PIN 3
 
 WiFiClient client;
+
+int previousPowerButtonState = HIGH;
+int previousResetButtonState = HIGH;
 
 void ack();
 
@@ -20,7 +24,8 @@ void setup()
 	Serial.begin(9600);
 	Serial.setDebugOutput(true);
 
-	pinMode(BUTTON_PIN, INPUT_PULLUP);
+	pinMode(POWER_BUTTON_PIN, INPUT_PULLUP);
+	pinMode(RESET_BUTTON_PIN, INPUT_PULLUP);
 
 	// Wait for a USB connection to be established
 	while (!Serial)
@@ -40,33 +45,52 @@ void setup()
 
 void loop()
 {
-	delay(25);
-	Serial.println("ESP32 loopy!");
+	delay(20);
 
-	int buttonState = digitalRead(BUTTON_PIN);
-	if (buttonState == LOW) {
-		Serial.println("Button pressed!");
+	int powerButtonState = digitalRead(POWER_BUTTON_PIN);
+	int resetButtonState = digitalRead(RESET_BUTTON_PIN);
+
+	// Unsupported usecase
+	if (powerButtonState == LOW && resetButtonState == LOW) {
+		previousPowerButtonState = HIGH;
+		previousResetButtonState = HIGH;
+		if (client.connected()) {
+			client.stop();
+		}
+		return;
+	}
+
+	bool isButtonPressed = (previousPowerButtonState == LOW && powerButtonState == LOW)
+	                       || (previousResetButtonState == LOW && resetButtonState == LOW);
+	previousPowerButtonState = powerButtonState;
+	previousResetButtonState = resetButtonState;
+
+	if (isButtonPressed) {
+		String button = (powerButtonState == LOW) ? "power" : "reset";
+
+		Serial.println("Pressed " + button + " button!");
 
 		if (!client.connected() && !client.connect(HOST, PORT)) {
 			Serial.println("Connection failed");
 			return;
 		}
 
-		client.print("button_pressed\n");
-		Serial.println("Sent button press");
+		client.print(button + "_pressed\n");
+		Serial.println("Sent " + button + " button press");
 
 		ack();
 	}
 	else {
-		Serial.println("Button not pressed!");
-
 		if (!client.connected()) {
 			return;
 		}
 
-		client.print("button_released\n");
-		Serial.println("Sent button release");
+		client.print("power_released\n");
+		Serial.println("Sent power button release");
+		ack();
 
+		client.print("reset_released\n");
+		Serial.println("Sent reset button release");
 		ack();
 
 		client.stop();
