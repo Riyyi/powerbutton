@@ -1,0 +1,17 @@
+* Powerbutton
+
+** Init
+
+platformio init --board esp32-c3-devkitm-1
+
+** Build
+
+platformio run
+
+** Upload
+
+platformio run --target upload
+
+** Console
+
+platformio device monitor
