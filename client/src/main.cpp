@@ -9,12 +9,18 @@
 #define HOST "192.168.4.1"
 #define PORT 1234
 
+#define BUTTON_PIN 2
+
+WiFiClient client;
+
+void ack();
+
 void setup()
 {
 	Serial.begin(9600);
 	Serial.setDebugOutput(true);
 
-	pinMode(2, OUTPUT);
+	pinMode(BUTTON_PIN, INPUT_PULLUP);
 
 	// Wait for a USB connection to be established
 	while (!Serial)
@@ -34,33 +40,51 @@ void setup()
 
 void loop()
 {
-	digitalWrite(2, HIGH);
-	delay(500);
-	digitalWrite(2, LOW);
-	delay(500);
-
+	delay(25);
 	Serial.println("ESP32 loopy!");
 
-	WiFiClient client;
-	if (client.connect(HOST, PORT)) {
+	int buttonState = digitalRead(BUTTON_PIN);
+	if (buttonState == LOW) {
+		Serial.println("Button pressed!");
+
+		if (!client.connected() && !client.connect(HOST, PORT)) {
+			Serial.println("Connection failed");
+			return;
+		}
+
 		client.print("button_pressed\n");
 		Serial.println("Sent button press");
 
-		while (client.connected()) {
-			if (client.available()) {
-				// Wait for acknowledgment from the receiver
-				String response = client.readStringUntil('\n');
-				if (response == "ACK") {
-					Serial.println("Received ACK");
-					break;
-				}
-			}
-		}
-
-		delay(2000);
-		client.stop();
+		ack();
 	}
 	else {
-		Serial.println("Connection failed");
+		Serial.println("Button not pressed!");
+
+		if (!client.connected()) {
+			return;
+		}
+
+		client.print("button_released\n");
+		Serial.println("Sent button release");
+
+		ack();
+
+		client.stop();
+	}
+}
+
+// -----------------------------------------
+
+void ack()
+{
+	while (client.connected()) {
+		if (client.available()) {
+			// Wait for acknowledgment from the receiver
+			String response = client.readStringUntil('\n');
+			if (response == "ACK") {
+				Serial.println("Received ACK");
+				return;
+			}
+		}
 	}
 }

@@ -12,7 +12,7 @@ server-log:
 
 server-run:
 	@-cd server ; \
-		platformio run --target upload ; \
+		platformio run --target upload && \
 		platformio device monitor ; \
 		cd ..
 
@@ -28,6 +28,6 @@ client-log:
 
 client-run:
 	@-cd client ; \
-		platformio run --target upload ; \
+		platformio run --target upload && \
 		platformio device monitor ; \
 		cd ..

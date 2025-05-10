@@ -12,6 +12,8 @@
 #define HIDDEN true
 #define MAX_CONNECTION 1
 
+#define SWITCH_PIN 2
+
 WiFiServer server(PORT);
 
 void setup()
@@ -19,7 +21,7 @@ void setup()
 	Serial.begin(9600);
 	Serial.setDebugOutput(true);
 
-	pinMode(2, OUTPUT);
+	pinMode(SWITCH_PIN, OUTPUT);
 
 	// Wait for a USB connection to be established
 	while (!Serial)
