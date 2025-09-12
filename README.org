@@ -15,3 +15,40 @@ platformio run --target upload
 ** Console
 
 platformio device monitor
+
+** Configuration
+
+The following fields in =secrets.h= have to be configured:
+
+- CLIENT_MAC
+- SERVER_MAC
+- PMK
+- LMK
+
+You have to configure the real STA MAC address of *both* the client and server.
+It might be odd that the AP MAC of the receiver isn't used, but that's how
+ESP-NOW works. You can find the MAC address with the following code.
+
+#+BEGIN_SRC cpp
+#include <esp_wifi.h>
+
+void printMacAddress()
+{
+	uint8_t mac[6];
+	esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, mac);
+	if (ret == ESP_OK) {
+		Serial.printf("{ %#x, %#x, %#x, %#x, %#x, %#x }\n",
+		              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	}
+	else {
+		Serial.println("Failed to read MAC address");
+	}
+}
+#+END_SRC
+
+PMK and LMK have to be 16 characters long and should be the same between the
+client and server.
+
+* References
+
+- https://randomnerdtutorials.com/esp32-esp-now-encrypted-messages/

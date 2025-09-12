@@ -11,25 +11,43 @@
 uint8_t client_mac[6] = CLIENT_MAC;
 uint8_t server_mac[6] = SERVER_MAC;
 
-uint64_t connect = 0;
-uint64_t is_connecting = 0;
-uint64_t ack = 0;
-uint8_t ack_speed = 50;
+bool powerRemotePressed = false;
+bool resetRemotePressed = false;
 
 // -----------------------------------------
 
 void wifiSetupEncryption();
 
-void timerStart(uint64_t* timer)
+void onDataSent(const uint8_t* mac_addr, esp_now_send_status_t status)
 {
-	*timer = millis();
 }
 
-uint64_t timerElapsed(uint64_t* timer)
+void onDataRecv(const uint8_t* mac_addr, const uint8_t* data, int data_len)
 {
-	auto now = millis();
-	uint64_t elapsed = now - *timer;
-	return elapsed;
+	Serial.print("Received: ");
+	Serial.write(data, data_len);
+	Serial.println();
+
+	auto msg = String((const char*)data, data_len);
+
+	if (msg == "power_pressed") {
+		powerRemotePressed = true;
+	}
+	else if (msg == "power_released") {
+		powerRemotePressed = false;
+	}
+	else if (msg == "reset_pressed") {
+		resetRemotePressed = true;
+	}
+	else if (msg == "reset_released") {
+		resetRemotePressed = false;
+	}
+	else {
+		return;
+	}
+
+	String reply = msg + "_ack";
+	esp_now_send(client_mac, (const uint8_t*)reply.c_str(), reply.length());
 }
 
 void wifiSetup()
@@ -42,44 +60,6 @@ void wifiSetup()
 	esp_wifi_set_channel(static_cast<uint8_t>(CHANNEL), WIFI_SECOND_CHAN_NONE);
 
 	wifiSetupEncryption();
-}
-
-// -----------------------------------------
-
-void onDataSent(const uint8_t* mac_addr, esp_now_send_status_t status)
-{
-	if (status != ESP_NOW_SEND_SUCCESS) {
-		return;
-	}
-
-	Serial.println("Receive ACK");
-
-	// Flash PWR LED while still receiving acknowledgments
-	if (timerElapsed(&ack) > ack_speed * 2) {
-		timerStart(&ack);
-		digitalWrite(POWER_LED_PIN, HIGH);
-		delay(ack_speed);
-		digitalWrite(POWER_LED_PIN, LOW);
-	}
-}
-
-void onDataRecv(const uint8_t* mac_addr, const uint8_t* data, int data_len)
-{
-	Serial.print("Received: ");
-	Serial.write(data, data_len);
-	Serial.println();
-
-	auto msg = String((const char*)data, data_len);
-
-	if (msg == "power_released_ack") {
-		need_power_ack = false;
-		wait_power_ack = false;
-	}
-
-	if (msg == "reset_released_ack") {
-		need_reset_ack = false;
-		wait_reset_ack = false;
-	}
 }
 
 void wifiSetupEncryption()
@@ -101,7 +81,7 @@ void wifiSetupEncryption()
 		.encrypt = true,
 	};
 
-	memcpy(peerInfo.peer_addr, server_mac, 6);
+	memcpy(peerInfo.peer_addr, client_mac, 6);
 	memcpy(peerInfo.lmk, LMK, 16);
 
 	if (esp_now_add_peer(&peerInfo) != ESP_OK) {
