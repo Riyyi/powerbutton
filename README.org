@@ -1,20 +1,25 @@
 * Powerbutton
 
-** Init
-
-platformio init --board esp32-c3-devkitm-1
-
 ** Build
 
-platformio run
+#+BEGIN_SRC sh
+make client
+make server
+#+END_SRC
 
 ** Upload
 
-platformio run --target upload
+#+BEGIN_SRC sh
+make client-run
+make server-run
+#+END_SRC
 
 ** Console
 
-platformio device monitor
+#+BEGIN_SRC sh
+make client-log
+make server-log
+#+END_SRC
 
 ** Configuration
 
