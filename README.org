@@ -1,4 +1,9 @@
-* Powerbutton
+#+TITLE: Powerbutton
+#+AUTHOR: Riyyi
+#+LANGUAGE: en
+#+OPTIONS: toc:nil
+
+The code for my remote power/reset button PCB.
 
 ** Build
 
